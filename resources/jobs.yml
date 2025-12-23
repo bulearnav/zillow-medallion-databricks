@@ -64,9 +64,10 @@ resources:
           notebook_task:
             notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
 
-        # ---------------- DLT / Pipeline ----------------
-        - task_key: dlt_neighborhood_pipeline
+        - task_key: dlt_neighborhood_notebook
           depends_on:
             - task_key: bronze_ingest_supporting_files
-          pipeline_task:
-            pipeline_id: ${resources.pipelines.neighborhood_bronze_dlt.id}
+          notebook_task:
+            notebook_path: "../Bronze Ingestion/04_dlt_bronze_neighborhood_csv.ipynb"
+
+
