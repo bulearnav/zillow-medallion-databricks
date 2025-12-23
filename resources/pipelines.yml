@@ -1,10 +1,11 @@
 resources:
   pipelines:
-    zillow_neighborhood_dlt:
-      name: zillow_neighborhood_dlt
+    neighborhood_bronze_dlt:
+      name: zillow_neighborhood_bronze_dlt
       development: true
       catalog: zillow
-      target: zillow_medallion_bronze
+      target: zillow_bronze
+
       libraries:
         - notebook:
-            path: ../notebooks/50_bronze_dlt_neighborhood
+            path: "../Bronze Ingestion/04_dlt_bronze_neighborhood_csv.ipynb"

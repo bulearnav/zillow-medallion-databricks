@@ -3,7 +3,6 @@ resources:
     zillow_orchestrator:
       name: zillow_orchestrator
 
-      # For serverless jobs (good for Free Edition)
       environments:
         - environment_key: default
           spec:
@@ -11,52 +10,63 @@ resources:
             dependencies: []
 
       tasks:
-        # ---- Day 1: prep / evidence (optional to include fetch) ----
-        - task_key: chunking_for_incremental
+        # ---------------- Day 1: Setup / prep ----------------
+        - task_key: fetch_raw_kaggle
           notebook_task:
-            notebook_path: "../Initial Creation and Setup/Chunking for Incremental"
+            notebook_path: "../Initial Creation and Setup/1. Fetch Raw Data From Kaggle.ipynb"
+
+        - task_key: chunking_for_incremental
+          depends_on:
+            - task_key: fetch_raw_kaggle
+          notebook_task:
+            notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
 
         - task_key: json_conversion
           depends_on:
             - task_key: chunking_for_incremental
           notebook_task:
-            notebook_path: "../Initial Creation and Setup/JSON Conversion and loading"
+            notebook_path: "../Initial Creation and Setup/JSON Conversion and loading.ipynb"
 
         - task_key: xml_conversion
           depends_on:
             - task_key: json_conversion
           notebook_task:
-            notebook_path: "../Initial Creation and Setup/XML Conversion and loading"
+            notebook_path: "../Initial Creation and Setup/XML Conversion and loading.ipynb"
 
         - task_key: load_csv_as_is
           depends_on:
             - task_key: xml_conversion
           notebook_task:
-            notebook_path: "../Initial Creation and Setup/Load CSV as is"
+            notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
 
-        # ---- Day 2/3: bronze ingestion ----
+        # ---------------- Day 2/3: Bronze ingestion ----------------
         - task_key: bronze_copy_into_zip
           depends_on:
             - task_key: load_csv_as_is
           notebook_task:
-            notebook_path: "../Bronze Ingestion/01_bronze_copy_into_zip_time_series"
+            notebook_path: "../Bronze Ingestion/01_bronze_copy_into_zip_time_series.ipynb"
 
         - task_key: bronze_autoloader_county_json
           depends_on:
             - task_key: bronze_copy_into_zip
           notebook_task:
-            notebook_path: "../Bronze Ingestion/02_bronze_autoloader_county_json"
+            notebook_path: "../Bronze Ingestion/02_bronze_autoloader_county_json.ipynb"
 
-        - task_key: bronze_xml_state
+        - task_key: bronze_xml_state_pyspark
           depends_on:
             - task_key: bronze_autoloader_county_json
           notebook_task:
-            notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark"
+            notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark.ipynb"
 
-        # If your 05 notebook ingests extra CSVs/crosswalks, run it here
-        - task_key: bronze_supporting_files
+        - task_key: bronze_ingest_supporting_files
           depends_on:
-            - task_key: bronze_xml_state
+            - task_key: bronze_xml_state_pyspark
           notebook_task:
-            notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files"
+            notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
 
+        # ---------------- DLT / Pipeline ----------------
+        - task_key: dlt_neighborhood_pipeline
+          depends_on:
+            - task_key: bronze_ingest_supporting_files
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.neighborhood_bronze_dlt.id}
