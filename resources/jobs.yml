@@ -10,11 +10,8 @@ resources:
             dependencies: []
 
       tasks:
-        # ---------------- Day 1: Setup / prep ----------------
-        - task_key: fetch_raw_kaggle
-          notebook_task:
-            notebook_path: "../Initial Creation and Setup/1. Fetch Raw Data From Kaggle.ipynb"
-
+        # ---------------- Phase 1: Initial setup (PARALLEL) ----------------
+        # These 4 run in parallel after fetch_raw_kaggle finishes.
         - task_key: chunking_for_incremental
           depends_on:
             - task_key: fetch_raw_kaggle
@@ -23,51 +20,74 @@ resources:
 
         - task_key: json_conversion
           depends_on:
-            - task_key: chunking_for_incremental
+            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/JSON Conversion and loading.ipynb"
 
         - task_key: xml_conversion
           depends_on:
-            - task_key: json_conversion
+            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/XML Conversion and loading.ipynb"
 
         - task_key: load_csv_as_is
           depends_on:
-            - task_key: xml_conversion
+            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
 
-        # ---------------- Day 2/3: Bronze ingestion ----------------
+        # Barrier: make sure prep is complete before ingestion starts
+        - task_key: prep_done
+          depends_on:
+            - task_key: chunking_for_incremental
+            - task_key: json_conversion
+            - task_key: xml_conversion
+            - task_key: load_csv_as_is
+          notebook_task:
+            notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
+          # ^ This is a lightweight “barrier” trick.
+          # If you want, replace with a tiny "00_barrier.ipynb" that just prints "prep done".
+
+        # ---------------- Phase 2: Bronze ingestion (PARALLEL) ----------------
+        # All ingestion notebooks run in parallel after prep_done.
         - task_key: bronze_copy_into_zip
           depends_on:
-            - task_key: load_csv_as_is
+            - task_key: prep_done
           notebook_task:
             notebook_path: "../Bronze Ingestion/01_bronze_copy_into_zip_time_series.ipynb"
 
         - task_key: bronze_autoloader_county_json
           depends_on:
-            - task_key: bronze_copy_into_zip
+            - task_key: prep_done
           notebook_task:
             notebook_path: "../Bronze Ingestion/02_bronze_autoloader_county_json.ipynb"
 
         - task_key: bronze_xml_state_pyspark
           depends_on:
-            - task_key: bronze_autoloader_county_json
+            - task_key: prep_done
           notebook_task:
             notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark.ipynb"
 
         - task_key: bronze_ingest_supporting_files
           depends_on:
-            - task_key: bronze_xml_state_pyspark
+            - task_key: prep_done
           notebook_task:
             notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
 
-        - task_key: dlt_neighborhood_notebook
+        - task_key: neighborhood_bronze
           depends_on:
-            - task_key: bronze_ingest_supporting_files
+            - task_key: prep_done
           notebook_task:
             notebook_path: "../Bronze Ingestion/04_dlt_bronze_neighborhood_csv.ipynb"
 
-
+        # Final barrier: job completes only when all ingestions finish
+        - task_key: all_bronze_done
+          depends_on:
+            - task_key: bronze_copy_into_zip
+            - task_key: bronze_autoloader_county_json
+            - task_key: bronze_xml_state_pyspark
+            - task_key: bronze_ingest_supporting_files
+            - task_key: neighborhood_bronze
+          notebook_task:
+            notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark.ipynb"
+          # Same trick: ideally replace with a tiny "99_done.ipynb" that prints success.
