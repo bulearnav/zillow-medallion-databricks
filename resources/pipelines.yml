@@ -1,0 +1,10 @@
+resources:
+  pipelines:
+    zillow_neighborhood_dlt:
+      name: zillow_neighborhood_dlt
+      development: true
+      catalog: zillow
+      target: zillow_medallion_bronze
+      libraries:
+        - notebook:
+            path: ../notebooks/50_bronze_dlt_neighborhood

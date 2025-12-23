@@ -1,0 +1,12 @@
+bundle:
+  name: zillow_medallion
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-2c8dd9b5-ccab.cloud.databricks.com

@@ -1,0 +1,62 @@
+resources:
+  jobs:
+    zillow_orchestrator:
+      name: zillow_orchestrator
+
+      # For serverless jobs (good for Free Edition)
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+            dependencies: []
+
+      tasks:
+        # ---- Day 1: prep / evidence (optional to include fetch) ----
+        - task_key: chunking_for_incremental
+          notebook_task:
+            notebook_path: "../Initial Creation and Setup/Chunking for Incremental"
+
+        - task_key: json_conversion
+          depends_on:
+            - task_key: chunking_for_incremental
+          notebook_task:
+            notebook_path: "../Initial Creation and Setup/JSON Conversion and loading"
+
+        - task_key: xml_conversion
+          depends_on:
+            - task_key: json_conversion
+          notebook_task:
+            notebook_path: "../Initial Creation and Setup/XML Conversion and loading"
+
+        - task_key: load_csv_as_is
+          depends_on:
+            - task_key: xml_conversion
+          notebook_task:
+            notebook_path: "../Initial Creation and Setup/Load CSV as is"
+
+        # ---- Day 2/3: bronze ingestion ----
+        - task_key: bronze_copy_into_zip
+          depends_on:
+            - task_key: load_csv_as_is
+          notebook_task:
+            notebook_path: "../Bronze Ingestion/01_bronze_copy_into_zip_time_series"
+
+        - task_key: bronze_autoloader_county_json
+          depends_on:
+            - task_key: bronze_copy_into_zip
+          notebook_task:
+            notebook_path: "../Bronze Ingestion/02_bronze_autoloader_county_json"
+
+        - task_key: bronze_xml_state
+          depends_on:
+            - task_key: bronze_autoloader_county_json
+          notebook_task:
+            notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark"
+
+        # If your 05 notebook ingests extra CSVs/crosswalks, run it here
+        - task_key: bronze_supporting_files
+          depends_on:
+            - task_key: bronze_xml_state
+          notebook_task:
+            notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files"
+
