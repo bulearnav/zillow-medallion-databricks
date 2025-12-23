@@ -13,26 +13,18 @@ resources:
         # ---------------- Phase 1: Initial setup (PARALLEL) ----------------
         # These 4 run in parallel after fetch_raw_kaggle finishes.
         - task_key: chunking_for_incremental
-          depends_on:
-            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
 
         - task_key: json_conversion
-          depends_on:
-            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/JSON Conversion and loading.ipynb"
 
         - task_key: xml_conversion
-          depends_on:
-            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/XML Conversion and loading.ipynb"
 
         - task_key: load_csv_as_is
-          depends_on:
-            - task_key: fetch_raw_kaggle
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
 
