@@ -11,7 +11,6 @@ resources:
 
       tasks:
         # ---------------- Phase 1: Initial setup (PARALLEL) ----------------
-        # These 4 run in parallel after fetch_raw_kaggle finishes.
         - task_key: chunking_for_incremental
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
@@ -28,7 +27,7 @@ resources:
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
 
-        # Barrier: make sure prep is complete before ingestion starts
+        # Barrier: prep join (re-runs a notebook; ok for now)
         - task_key: prep_done
           depends_on:
             - task_key: chunking_for_incremental
@@ -37,11 +36,8 @@ resources:
             - task_key: load_csv_as_is
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
-          # ^ This is a lightweight “barrier” trick.
-          # If you want, replace with a tiny "00_barrier.ipynb" that just prints "prep done".
 
         # ---------------- Phase 2: Bronze ingestion (PARALLEL) ----------------
-        # All ingestion notebooks run in parallel after prep_done.
         - task_key: bronze_copy_into_zip
           depends_on:
             - task_key: prep_done
@@ -66,12 +62,12 @@ resources:
           notebook_task:
             notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
 
+        # DLT pipeline task (runs AFTER supporting files; but still parallel with others)
         - task_key: dlt_neighborhood_pipeline
           depends_on:
-           - task_key: bronze_ingest_supporting_files
+            - task_key: prep_done
           pipeline_task:
             pipeline_id: ${resources.pipelines.neighborhood_bronze_dlt.id}
-
 
         # Final barrier: job completes only when all ingestions finish
         - task_key: all_bronze_done
@@ -80,7 +76,6 @@ resources:
             - task_key: bronze_autoloader_county_json
             - task_key: bronze_xml_state_pyspark
             - task_key: bronze_ingest_supporting_files
-            - task_key: neighborhood_bronze
+            - task_key: dlt_neighborhood_pipeline
           notebook_task:
             notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark.ipynb"
-          # Same trick: ideally replace with a tiny "99_done.ipynb" that prints success.
