@@ -66,11 +66,12 @@ resources:
           notebook_task:
             notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
 
-        - task_key: neighborhood_bronze
+        - task_key: dlt_neighborhood_pipeline
           depends_on:
-            - task_key: prep_done
-          notebook_task:
-            notebook_path: "../Bronze Ingestion/04_dlt_bronze_neighborhood_csv.ipynb"
+           - task_key: bronze_ingest_supporting_files
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.neighborhood_bronze_dlt.id}
+
 
         # Final barrier: job completes only when all ingestions finish
         - task_key: all_bronze_done
