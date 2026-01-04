@@ -6,7 +6,7 @@ resources:
       development: true
       serverless: true
       catalog: zillow
-      target: zillow_bronze
+      target: zillow_bronze_dlt
 
       libraries:
         - notebook:
@@ -18,7 +18,7 @@ resources:
       development: true
       serverless: true
       catalog: zillow
-      target: zillow_silver
+      target: zillow_silver_dlt
 
       libraries:
         - notebook:
@@ -30,7 +30,7 @@ resources:
       development: true
       serverless: true
       catalog: zillow
-      target: zillow_gold
+      target: zillow_gold_dlt
 
       libraries:
         - notebook:
