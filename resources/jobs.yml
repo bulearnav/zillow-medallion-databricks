@@ -35,7 +35,7 @@ resources:
             - task_key: xml_conversion
             - task_key: load_csv_as_is
           notebook_task:
-            notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
+            notebook_path: "../Initial Creation and Setup/checkpoint_prep_done.ipynb"
 
         # ================ Phase 2: Bronze Ingestion (PARALLEL) ================
         - task_key: bronze_copy_into_zip
@@ -77,7 +77,7 @@ resources:
             - task_key: bronze_ingest_supporting_files
             - task_key: dlt_neighborhood_bronze
           notebook_task:
-            notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
+            notebook_path: "../Bronze Ingestion/checkpoint_bronze_done.ipynb"
 
         # ================ Phase 3: Silver Transformation (PARALLEL) ================
         - task_key: silver_time_series_clean
