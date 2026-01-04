@@ -10,7 +10,7 @@ resources:
             dependencies: []
 
       tasks:
-        # ---------------- Phase 1: Initial setup (PARALLEL) ----------------
+        # ================ Phase 1: Initial Setup (PARALLEL) ================
         - task_key: chunking_for_incremental
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
@@ -27,7 +27,7 @@ resources:
           notebook_task:
             notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
 
-        # Barrier: prep join (re-runs a notebook; ok for now)
+        # Barrier: Phase 1 complete
         - task_key: prep_done
           depends_on:
             - task_key: chunking_for_incremental
@@ -35,9 +35,9 @@ resources:
             - task_key: xml_conversion
             - task_key: load_csv_as_is
           notebook_task:
-            notebook_path: "../Initial Creation and Setup/Chunking for Incremental.ipynb"
+            notebook_path: "../Initial Creation and Setup/Load CSV as is.ipynb"
 
-        # ---------------- Phase 2: Bronze ingestion (PARALLEL) ----------------
+        # ================ Phase 2: Bronze Ingestion (PARALLEL) ================
         - task_key: bronze_copy_into_zip
           depends_on:
             - task_key: prep_done
@@ -62,20 +62,76 @@ resources:
           notebook_task:
             notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
 
-        # DLT pipeline task (runs AFTER supporting files; but still parallel with others)
-        - task_key: dlt_neighborhood_pipeline
+        - task_key: dlt_neighborhood_bronze
           depends_on:
             - task_key: prep_done
           pipeline_task:
             pipeline_id: ${resources.pipelines.neighborhood_bronze_dlt.id}
 
-        # Final barrier: job completes only when all ingestions finish
+        # Barrier: Phase 2 complete
         - task_key: all_bronze_done
           depends_on:
             - task_key: bronze_copy_into_zip
             - task_key: bronze_autoloader_county_json
             - task_key: bronze_xml_state_pyspark
             - task_key: bronze_ingest_supporting_files
-            - task_key: dlt_neighborhood_pipeline
+            - task_key: dlt_neighborhood_bronze
           notebook_task:
-            notebook_path: "../Bronze Ingestion/03_bronze_xml_state_pyspark.ipynb"
+            notebook_path: "../Bronze Ingestion/05_bronze_ingest_supporting_files.ipynb"
+
+        # ================ Phase 3: Silver Transformation (PARALLEL) ================
+        - task_key: silver_time_series_clean
+          depends_on:
+            - task_key: all_bronze_done
+          notebook_task:
+            notebook_path: "../Silver Transformation/01_silver_time_series_clean.ipynb"
+
+        - task_key: silver_crosswalk_clean
+          depends_on:
+            - task_key: all_bronze_done
+          notebook_task:
+            notebook_path: "../Silver Transformation/02_silver_crosswalk_clean.ipynb"
+
+        - task_key: silver_quarantine_handler
+          depends_on:
+            - task_key: silver_time_series_clean
+            - task_key: silver_crosswalk_clean
+          notebook_task:
+            notebook_path: "../Silver Transformation/03_silver_quarantine_handler.ipynb"
+
+        - task_key: dlt_silver_pipeline
+          depends_on:
+            - task_key: all_bronze_done
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.zillow_silver_dlt.id}
+
+        # Barrier: Phase 3 complete
+        - task_key: all_silver_done
+          depends_on:
+            - task_key: silver_time_series_clean
+            - task_key: silver_crosswalk_clean
+            - task_key: silver_quarantine_handler
+            - task_key: dlt_silver_pipeline
+          notebook_task:
+            notebook_path: "../Silver Transformation/05_silver_delta_features.ipynb"
+
+        # ================ Phase 4: Gold Aggregations (PARALLEL) ================
+        - task_key: gold_aggregations
+          depends_on:
+            - task_key: all_silver_done
+          notebook_task:
+            notebook_path: "../Gold Transformation/02_gold_aggregations_standalone.ipynb"
+
+        - task_key: dlt_gold_pipeline
+          depends_on:
+            - task_key: all_silver_done
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.zillow_gold_dlt.id}
+
+        # Barrier: Phase 4 complete (Final)
+        - task_key: all_gold_done
+          depends_on:
+            - task_key: gold_aggregations
+            - task_key: dlt_gold_pipeline
+          notebook_task:
+            notebook_path: "../Gold Transformation/02_gold_aggregations_standalone.ipynb"

@@ -1,12 +1,37 @@
 resources:
   pipelines:
+    # Bronze DLT Pipeline - Neighborhood ingestion
     neighborhood_bronze_dlt:
       name: zillow_neighborhood_bronze_dlt
       development: true
-      serverless: true        # <-- this fixes your earlier deploy error
+      serverless: true
       catalog: zillow
       target: zillow_bronze
 
       libraries:
         - notebook:
             path: "../Bronze Ingestion/04_dlt_bronze_neighborhood_csv.ipynb"
+
+    # Silver DLT Pipeline - Cleaned and standardized tables
+    zillow_silver_dlt:
+      name: zillow_silver_dlt
+      development: true
+      serverless: true
+      catalog: zillow
+      target: zillow_silver
+
+      libraries:
+        - notebook:
+            path: "../Silver Transformation/04_dlt_silver_pipeline.ipynb"
+
+    # Gold DLT Pipeline - Dimensions, Facts, and Aggregations
+    zillow_gold_dlt:
+      name: zillow_gold_dlt
+      development: true
+      serverless: true
+      catalog: zillow
+      target: zillow_gold
+
+      libraries:
+        - notebook:
+            path: "../Gold Transformation/01_dlt_gold_pipeline.ipynb"
