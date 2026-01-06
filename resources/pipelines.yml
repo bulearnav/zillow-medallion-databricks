@@ -22,7 +22,7 @@ resources:
 
       libraries:
         - notebook:
-            path: "../Silver Transformation/04_dlt_silver_pipeline.py"
+            path: "../Silver Transformation/04_dlt_silver_pipeline.ipynb"
 
     # Gold DLT Pipeline - Dimensions, Facts, and Aggregations
     zillow_gold_dlt:
